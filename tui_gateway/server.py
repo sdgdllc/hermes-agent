@@ -1,5 +1,6 @@
 import atexit
 import concurrent.futures
+import contextlib
 import contextvars
 import copy
 import inspect
@@ -1097,24 +1098,32 @@ def _ensure_session_db_row(session: dict) -> None:
                 pass
 
 
-def _session_db_handle(session: dict):
-    """Resolve the SessionDB that owns this session's row (profile-aware).
+@contextlib.contextmanager
+def _session_db(session: dict):
+    """Yield the SessionDB that owns this session's row (profile-aware).
 
     Mirrors :func:`_ensure_session_db_row`: a remote/profile session persists
-    into its own profile's ``state.db``, everything else uses the shared
-    ``_get_db()`` handle. Returns ``(db, close_db)``; the caller MUST call
-    ``db.close()`` when ``close_db`` is True. ``db`` is None when unavailable.
+    into its own profile's ``state.db`` (a fresh handle we close on exit);
+    everything else borrows the shared ``_get_db()`` handle (left open). Yields
+    None when the db is unavailable.
     """
+    db, close_db = None, False
     profile_home = session.get("profile_home")
     if profile_home:
         from hermes_state import SessionDB
 
         try:
-            return SessionDB(db_path=Path(profile_home) / "state.db"), True
+            db, close_db = SessionDB(db_path=Path(profile_home) / "state.db"), True
         except Exception:
             logger.debug("failed to open profile db for session", exc_info=True)
-            return None, False
-    return _get_db(), False
+    else:
+        db = _get_db()
+    try:
+        yield db
+    finally:
+        if close_db and db is not None:
+            with contextlib.suppress(Exception):
+                db.close()
 
 
 def _set_session_cwd(session: dict, cwd: str) -> str:
@@ -3961,22 +3970,16 @@ def _(rid, params: dict) -> dict:
     # for a brand-new empty chat (mirrors the CLI's set_session_title stub).
     _ensure_session_db_row(session)
 
-    db, close_db = _session_db_handle(session)
-    if db is None:
-        return _db_unavailable_error(rid, code=5007)
-    key = session["session_key"]
-    try:
-        if not db.get_session(key):
-            db.set_session_title(key, f"handoff-{key[:8]}")
-        ok = db.request_handoff(key, platform_name)
-    except Exception as e:
-        return _err(rid, 5007, str(e))
-    finally:
-        if close_db:
-            try:
-                db.close()
-            except Exception:
-                pass
+    with _session_db(session) as db:
+        if db is None:
+            return _db_unavailable_error(rid, code=5007)
+        key = session["session_key"]
+        try:
+            if not db.get_session(key):
+                db.set_session_title(key, f"handoff-{key[:8]}")
+            ok = db.request_handoff(key, platform_name)
+        except Exception as e:
+            return _err(rid, 5007, str(e))
 
     if not ok:
         return _err(
@@ -4006,18 +4009,11 @@ def _(rid, params: dict) -> dict:
     session, err = _sess_nowait(params, rid)
     if err:
         return err
-    db, close_db = _session_db_handle(session)
-    if db is None:
-        return _db_unavailable_error(rid, code=5007)
-    key = session["session_key"]
-    try:
-        record = db.get_handoff_state(key)
-    finally:
-        if close_db:
-            try:
-                db.close()
-            except Exception:
-                pass
+    with _session_db(session) as db:
+        if db is None:
+            return _db_unavailable_error(rid, code=5007)
+        record = db.get_handoff_state(session["session_key"])
+
     record = record or {}
     return _ok(
         rid,
