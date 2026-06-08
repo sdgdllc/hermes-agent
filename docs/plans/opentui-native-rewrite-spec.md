@@ -1,6 +1,15 @@
 # Spec v3: Native OpenTUI TUI — second engine, rewrite-not-shim
 
-**Status:** Active spec. Supersedes the shim architecture in `opentui-migration-spec.md`.
+> **⚠️ SUPERSEDED (2026-06-08) by `opentui-rewrite-v4-spec.md`.** v4 reverses two core choices:
+> the binding (`@opentui/react` → **`@opentui/solid` + solid-js**) and the logic-reuse strategy
+> (path-import Ink → **pure scratch**), and adds **Effect 4.0-beta AT THE BOUNDARY** (renderer
+> lifecycle, transport service, Schema decode, typed errors, runtime). The `ui-tui-opentui/` React
+> build this v3 spec describes is now **reference-only** — its render path, prompt-deadlock fix,
+> launcher cutover, and gotchas are mined into v4, but no code is carried forward. **Read
+> `opentui-rewrite-v4-spec.md` as the authoritative spec.** The launcher (§4) and distribution (§5)
+> sections below remain factually true and are carried into v4 §9/§10.
+
+**Status:** SUPERSEDED by v4. (Was: Active spec. Superseded the shim architecture in `opentui-migration-spec.md`.)
 **Date:** 2026-06-08
 **Author:** Hermes (for glitch)
 **Lineage:**
