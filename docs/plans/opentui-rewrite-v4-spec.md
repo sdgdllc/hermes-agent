@@ -583,6 +583,10 @@ two gates run every phase.
   name, context}` rows into the preceding assistant turn's parts so they render inline (§8 #5).
   Live-verified incl. a 103-message stress session: **76ms client hydrate, 214MB RSS stable (no leak)**,
   tool rows hydrated, scroll works (smoke P4).
-- **Next — Phase 4c:** remaining TUI-only client commands (mouse/redraw/compact/details/sessions/
-  replay/setup/heapdump/mem) + the completions dropdown + pager routing for long output. Then Phase 5
-  (overlays/pickers: model picker, session switcher, skills hub, agents dashboard; chrome; agent features).
+- **Phase 5a — pager: ✅** (this commit). A full-height scrollable overlay (`view/overlays/pager.tsx`)
+  that replaces the transcript+composer; long slash output (>180 chars / >2 lines) + `/logs` route to
+  it (`logic/slash.ts` `present()`), unlocking `/status`,`/logs`,`/history`,`/tools` output. Esc/q
+  close (deferred, no key-leak); scroll via scrollBy/scrollTo. Live: `/logs`,`/version` → pager (smoke P5a).
+- **Next:** completions dropdown (typing `/` → `complete.slash`), then Phase 5b chrome (header
+  model/cwd/context%/cost from `session.info`+`Usage`), Phase 5c pickers (model picker, session
+  switcher, skills hub), Phase 5d agent features, Phase 5e subagents/agents dashboard, Phase 8 launcher.

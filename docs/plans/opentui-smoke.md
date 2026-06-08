@@ -306,8 +306,26 @@ they render inline (state:'complete', summary=context) — the §8 #5 gotcha.
 **Phase 4c (TODO):** remaining TUI-only client commands (mouse/redraw/compact/details/sessions/
 replay/setup/heapdump/mem), completions dropdown (step 5), pager routing for long slash output.
 
-### Phase 5a–5e
-_(append: step 5 modals/overlays/pager/completions/pickers; chrome; agent features; subagents)_
+### Phase 5a — pager (step 5, partial)
+
+A full-height scrollable overlay (`view/overlays/pager.tsx`) replaces the transcript+composer while
+open (`store.state.pager`); scrolling via `useKeyboard`→`scrollBy`/`scrollTo` (no focus reliance),
+Esc/q close (deferred so the key can't leak into the remounting composer). Long slash output
+(>180 chars or >2 lines, Ink parity) routes here instead of a system line; `/logs` always pages.
+Unlocks `/status`,`/logs`,`/history`,`/tools` output at once.
+
+- *Run log (2026-06-08, PASS):*
+  - Headless gate `bun run check` → **green** (41 tests / 7 files): slash `present()` routing
+    (short→system, long→pager, titled by command; `/logs`→pager) + a pager frame test (title +
+    content render, transcript/composer replaced).
+  - **Live tmux:** `/logs` → bordered pager titled "Logs" with the ring lines + footer "Esc/q close";
+    PageDown scrolled; Esc closed → composer returned AND refocused (typed "after-pager" appeared —
+    no key-leak). `/version` (5-line output) → routed to the pager titled "Version".
+
+**Phase 5a (completions) / 5b–5e (TODO):** completions dropdown (typing `/` → `complete.slash`);
+chrome (header model/cwd/context%/cost from `session.info`+`Usage`); pickers (model picker, session
+switcher, skills hub); agent features (reasoning trail, todos, notifications, voice); subagents
+tree + agents dashboard.
 
 ### Phase 8 — launcher
 _(append: launch via the real `HERMES_TUI_ENGINE=opentui hermes --tui`; dashboard PTY path)_

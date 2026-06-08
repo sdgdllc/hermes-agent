@@ -101,8 +101,15 @@ Composer↔overlay swap on `store.state.prompt`; global Ctrl+C-quit gated on `!b
 | Completions dropdown; pager routing for long output | `useCompletion.ts`; `FloatBox` | — | ❌ (4c/5a) | — |
 | Session RESUME (`session.resume`/`session.most_recent` + hydrate incl. tool rows `{name,context}` folded into assistant parts) | `useSessionLifecycle.ts` | `logic/resume.ts`, `logic/store.ts` (beginBuffer/commitSnapshot), `entry/main.tsx` | ✅ | `resume.test.ts` + `store.test.ts` · **smoke P4 (live + 103-msg stress: 76ms hydrate, 214MB stable)** |
 
-_Later phases (overlays/pickers, chrome, agent features) are added as each lands — the §1–§4 Ink
-inventory below is the per-phase source._
+### Phase 5a — pager (§2b)
+| Concern | Ink ref | opencode ref | v2 build | Status | Test · smoke |
+|---|---|---|---|---|---|
+| Pager overlay — full-height scrollbox, title+footer, Esc/q close, scroll via scrollBy/scrollTo; replaces transcript+composer | `appOverlays.tsx:177` (`FloatBox`) | `routes/session` pager | `view/overlays/pager.tsx`, `store` openPager/closePager, `view/App.tsx` | ✅ | `render.test.tsx` · smoke P5a |
+| Long slash output → pager (Ink: >180 chars / >2 lines), titled by command; `/logs`→pager | `createSlashHandler.ts` `page()` | — | `logic/slash.ts` `present()` | ✅ | `slash.test.ts` · smoke P5a (`/version`,`/logs`) |
+| Unlocks `/status`,`/logs`,`/history`,`/tools` output | `appOverlays.tsx` | — | (via `present()`) | ✅ | smoke P5a |
+
+_Remaining: completions dropdown (5a), chrome (5b), pickers — model/session/skills (5c), agent
+features (5d), subagents/agents dashboard (5e). The §1–§4 Ink inventory below is the per-phase source._
 
 ---
 
