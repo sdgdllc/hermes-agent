@@ -571,6 +571,13 @@ two gates run every phase.
   for clarify free-text + a masked `useKeyboard` buffer for sudo/secret (native `<input>` has no mask).
   Live-verified end to end: approval → approve/deny/Ctrl+C-cancel all UNBLOCK the agent, no deadlock
   (smoke P3). `confirm` is local (non-gateway) — lands with the slash commands that trigger it (P4).
-- **Next — Phase 4 — session lifecycle + slash system:** create/resume (incl. resumed tool rows
-  `{name,context}`) + the slash-command SYSTEM (`commands.catalog` RPC + the dispatch ladder +
-  the 13 TUI-only client commands) + the local `confirm` dialog for `/new`,`/clear`.
+- **Phase 4a — slash command system + confirm: ✅** (this commit). The composer routes `/command`
+  through the dispatch ladder (`logic/slash.ts`: client → `slash.exec` → `command.dispatch`);
+  6 client commands (help/quit/exit/clear/new/logs); `/help` renders the live `commands.catalog`;
+  a local Y/N `ConfirmPrompt` for `/clear`,`/new`. Also fixed a keystroke-leak (the answering key
+  bleeding into the refocused composer) by deferring the prompt-clear — hardens all Phase 3 prompts.
+  Live: `/help` (full catalog), `/version` (slash.exec), `/clear`→confirm→clear, `/quit` (smoke P4).
+- **Next — Phase 4b/4c:** the remaining TUI-only client commands (mouse/redraw/compact/details/
+  sessions/replay/setup/heapdump/mem), the completions dropdown + pager routing for long output, and
+  session RESUME (`session.resume` + hydrate the snapshot incl. resumed tool rows `{name,context}`).
+  Then Phase 5 (overlays/pickers/chrome/agent features).

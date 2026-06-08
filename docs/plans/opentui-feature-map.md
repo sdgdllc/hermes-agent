@@ -88,8 +88,21 @@ Composer↔overlay swap on `store.state.prompt`; global Ctrl+C-quit gated on `!b
 | `sudo.request`/`secret.request` → masked buffer → `sudo/secret.respond {password/value, request_id}`; Esc/Ctrl+C→'' | `cgeh.ts` | — | `view/prompts/maskedPrompt.tsx` | ✅ | `store.test.ts` · smoke P3 (shared infra) |
 | `confirm` (local, non-gateway Y/N) | `prompts.tsx` ConfirmPrompt | — | (Phase 4 — triggered by `/new`,`/clear`) | ❌ | — |
 
-_Later phases (slash/session lifecycle, overlays/pickers, chrome, agent features) are added as each
-lands — the §1–§4 Ink inventory below is the per-phase source._
+### Phase 4a — slash command system + confirm
+| Concern | Ink ref | v2 build | Status | Test · smoke |
+|---|---|---|---|---|
+| Parse + dispatch ladder (client → `slash.exec` → `command.dispatch` w/ exec/alias/skill/send/prefill) | `createSlashHandler.ts`, `domain/slash.ts` | `logic/slash.ts` | ✅ | `slash.test.ts` · smoke P4 (`/version` via slash.exec) |
+| Composer routes `/command` vs prompt; server output → system line | `useSubmission.ts` | `entry/main.tsx` | ✅ | smoke P4 |
+| Client commands (help/quit/exit/clear/new/logs) | `slash/commands/*.ts` | `logic/slash.ts` | ⚠️ 6 of 13 | `slash.test.ts` · smoke P4 |
+| `commands.catalog` → `/help` | `useConfigSync.ts` | `logic/slash.ts` | ✅ | smoke P4 (full catalog) |
+| Local `confirm` Y/N dialog (`/clear`,`/new`) | `prompts.tsx` ConfirmPrompt | `view/prompts/confirmPrompt.tsx` + store `setConfirm` | ✅ | smoke P4 (clear→y) |
+| Keystroke-leak fix: defer prompt-clear past the answering key (hardens all prompts) | — | `view/prompts/promptOverlay.tsx` | ✅ | smoke P4 (`/clear`→y→hi) |
+| Remaining TUI-only commands (mouse/redraw/compact/details/sessions/replay/setup/heapdump/mem) | `slash/commands/*.ts` | — | ❌ (4b) | — |
+| Completions dropdown; pager routing for long output | `useCompletion.ts`; `FloatBox` | — | ❌ (4c/5a) | — |
+| Session RESUME (`session.resume` + hydrate incl. tool rows `{name,context}`) | `useSessionLifecycle.ts` | (store.hydrate ready) | ❌ (4b) | — |
+
+_Later phases (overlays/pickers, chrome, agent features) are added as each lands — the §1–§4 Ink
+inventory below is the per-phase source._
 
 ---
 

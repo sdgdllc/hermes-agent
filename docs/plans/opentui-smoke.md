@@ -244,7 +244,34 @@ sudo/secret (native `<input>` has no mask). Adds smoke step 6.
     `confirm` is local (non-gateway) and lands with the slash commands that trigger it (Phase 4).
 
 ### Phase 4 — session lifecycle + slash system
-_(append: step 7 resume; slash dispatch + the 13 TUI-only commands)_
+
+**Phase 4a — slash command system + confirm:** the composer routes `/command` through the dispatch
+ladder (`logic/slash.ts`): client-local command → `slash.exec {command, session_id}` (output →
+system line) → on reject `command.dispatch {arg, name, session_id}` (exec/plugin→system ·
+alias→re-dispatch · skill/send→submit a turn · prefill→notice). Client commands: help/quit/exit/
+clear/new/logs. `/clear`,`/new` open a LOCAL Y/N confirm (`ConfirmPrompt`, non-gateway). `/help`
+renders the live `commands.catalog`. Adds smoke step 5 (slash) partial.
+
+- *Run log (2026-06-08, PASS):*
+  - Headless gate `bun run check` → **green** (36 tests / 6 files). New `slash.test.ts`: parse + the
+    full ladder (client cmds; unknown→slash.exec; reject→command.dispatch send/exec) against a fake
+    `SlashContext`.
+  - **Live tmux:**
+    - `/help` → the full gateway catalog rendered (18+ `/command — desc` lines incl. skill commands;
+      `commands.catalog` `pairs` parsed).
+    - `/version` → ran through `slash.exec`; output shown as a system line ("Hermes Agent v0.16.0 …").
+    - `/clear` → LOCAL confirm dialog ("Clear the transcript? y/Enter · n/Esc") → `y` cleared the
+      transcript; composer returned and accepted input.
+    - `/quit` → clean quit, gateway child reaped.
+  - **Keystroke-leak fix:** the key that answers a prompt no longer bleeds into the freshly-focused
+    composer (`/clear`→`y`→`hi` shows `hi`, not `yhi`). PromptOverlay now defers the prompt-clear
+    (composer remount) past the current keystroke (`setTimeout 0`) — this also hardens the Phase 3
+    prompts (approve/deny Enter, masked Enter, clarify submit).
+
+**Phase 4b/4c (TODO):** the remaining TUI-only client commands (mouse/redraw/compact/details/
+sessions/replay/setup/heapdump/mem), completions dropdown (step 5), pager routing for long slash
+output (step 5), and session RESUME — `session.resume` + hydrate the snapshot incl. resumed tool
+rows `{role:'tool', name, context}` (step 7).
 
 ### Phase 5a–5e
 _(append: step 5 modals/overlays/pager/completions/pickers; chrome; agent features; subagents)_
