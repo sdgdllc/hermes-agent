@@ -409,6 +409,37 @@ run it under Bun; capture a frame + a perf number. No Python launcher changes ye
     (`web_server.py` `_apply_tui_engine_env`), `_ensure_tui_bun` auto-install + `bun-bootstrap.sh`,
     auto-fallback-to-ink on OpenTUI launch failure, wheel/Docker native-lib packaging.
 
+- **Polish pass ✓ (2026-06-08) — 4 live UX/correctness bugs glitch hit driving the engine.**
+  All in `ui-tui-opentui/`; Ink untouched. `bun run check` green (5/5: type-check, lint,
+  FakeGateway demo, prompts 45/45, real reply). BUGs 1/2/4 **verified live in tmux**; BUG 3 is
+  code-complete + contract-verified (live `--resume` left for glitch — needs a saved session).
+  - **BUG 2 (tool rendering) — biggest win.** Was: every `role:'tool'` Msg dumped raw (often JSON)
+    into a full-width rounded box, no cap → ate scrollback. Now: structured `Msg.tool`
+    (`name/resultText/error/summary/lineCount`); `tool.complete` unwraps the `{output, exit_code}`
+    envelope via `engine/toolOutput.ts::stripToolEnvelope`; `messageLine.tsx` renders a **one-line**
+    row by default, or a **left-bar block capped to 10 lines** (`collapseToolOutput`) with a
+    "… +N more (click to expand)" `onMouseDown` toggle — never a full box. New `src/engine/` dir
+    (actualizes the §2-reserved rendering-helpers home). tmux: `⚡ terminal` + capped list, no box.
+  - **BUG 1 (input never cleared on submit).** `composer.tsx` now holds a `ref` to the
+    `InputRenderable` and sets `ref.value = ''` after firing `onSubmit` (+ a synchronous
+    double-Enter guard, released on `busy→false`). tmux: typed text → Enter → message moves to
+    transcript, composer returns to placeholder.
+  - **Latent bug found + fixed while verifying BUG 1:** the composer had default `flexShrink:1`, so
+    once the transcript filled the viewport its input row collapsed onto the rule (placeholder words
+    `─`-separated, unreadable). Pinned `flexShrink:0` (the PromptOverlay slot already was). Would hit
+    any long-transcript live session; surfaced by the taller BUG-2 tool seed. (Caught a regression
+    in `demo.prompts.tsx`, now back to 45/45.)
+  - **BUG 4 (resize didn't reflow).** `app.tsx` reads live `useTerminalDimensions()` (falls back to
+    props for the headless test renderer) and both entries **mount once** (dropped the manual
+    `renderer.on('resize', re-createRoot)`); Yoga reflows. tmux: 100→64 cols re-wrapped the reply +
+    rule to 64.
+  - **BUG 3 (resume).** `entry.real.tsx` reads `HERMES_TUI_RESUME` (the launcher sets it,
+    main.py:2020) → `RealGateway({resume})`; `ensureSession()` calls `session.resume {cols,
+    session_id}` instead of `session.create` and seeds the transcript via
+    `EventAdapter.loadTranscript(messages, inflight)`. Verified the RPC contract against the real
+    gateway: `@method("session.resume")` (server.py:3276) wants `session_id`(required)+`cols`,
+    returns `messages`+`inflight`. Live `hermes --tui --resume <id>` confirmation still pending
+    (needs a saved session + model auth).
 
 ### Subagent workflow note (for future phases)
 OpenTUI implementation subagents MUST get the `skills` toolset AND be told to

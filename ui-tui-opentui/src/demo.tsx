@@ -11,10 +11,13 @@ import { createRoot } from '@opentui/react'
 import React from 'react'
 
 import { App } from './components/app.tsx'
+import { stripToolEnvelope } from './engine/toolOutput.ts'
 import { FakeGateway } from './fakeGateway.ts'
 
 const COLS = 90
-const ROWS = 28
+// Tall enough that the full seed transcript (incl. the multi-line tool block)
+// fits in the seed frame without scrolling the top user line off.
+const ROWS = 36
 
 const { renderer, renderOnce, flush, captureCharFrame } = await createTestRenderer({
   width: COLS,
@@ -30,6 +33,11 @@ await new Promise(r => setTimeout(r, 150))
 await renderOnce()
 await flush()
 const t1 = performance.now()
+
+// Capture the SEED frame first — before the follow-up submit scrolls the
+// sticky-bottom transcript and pushes the seed (incl. the tall tool block) up.
+// The seed-content + tool-render assertions are checked against this frame.
+const seedFrame = captureCharFrame()
 
 // Simulate a user submitting a message; let the streamed reply complete.
 const done = new Promise<void>(resolve => gw.send('does interactive work?', resolve))
@@ -48,12 +56,18 @@ writeFileSync(new URL('../demo-frame.txt', import.meta.url), frame)
 const report = [
   `rendered ${COLS}x${ROWS}; first paint ${(t1 - t0).toFixed(2)}ms`,
   `frame chars: ${frame.length}`,
-  `header present: ${frame.includes('hermes')}`,
-  `seed transcript present: ${frame.includes('switch the TUI')}`,
+  `header present: ${seedFrame.includes('hermes')}`,
+  `seed transcript present: ${seedFrame.includes('Key points')}`,
   `user submit echoed: ${frame.includes('does interactive work?')}`,
   `streamed reply present: ${frame.includes('Native OpenTUI reply')}`,
   `composer present: ${frame.includes('Ctrl+C') || frame.includes('streaming')}`,
-  `tool box present: ${frame.includes('bun src/entry')}`,
+  // BUG 2: compact tool render (checked on the seed frame, before scroll) —
+  // name shown, output capped (not dumped), and NO full-width rounded box
+  // (we removed the bordered box → no ╭ anywhere in either frame).
+  `tool name rendered: ${seedFrame.includes('terminal')}`,
+  `tool output capped: ${seedFrame.includes('more line')}`,
+  `no full-width tool box (no rounded border): ${!seedFrame.includes('╭') && !frame.includes('╭')}`,
+  `envelope strip unit: ${stripToolEnvelope('{"output":"hi","exit_code":0}') === 'hi'}`,
   `literal markdown markers leaked (**): ${(frame.match(/\*\*/g) || []).length}`
 ].join('\n')
 

@@ -3,6 +3,23 @@
 // real gateway event stream (see src/gateway/eventAdapter.ts).
 import type { Role } from './theme.ts'
 
+/**
+ * Structured tool-result payload for a `role:'tool'` Msg (BUG 2). The view
+ * (messageLine.tsx) renders compactly from these fields instead of dumping a
+ * raw `"$ name\n<json>"` string into a full-width box. `resultText` is already
+ * JSON-envelope-stripped (see engine/toolOutput.ts) so the view shows the
+ * actual `output`, not the `{output, exit_code}` wrapper.
+ */
+export interface ToolMsg {
+  name: string
+  /** Envelope-stripped output (may be multi-line; the view caps it). */
+  resultText?: string
+  /** Short one-line status when there's no substantial output. */
+  summary?: string
+  error?: string
+  lineCount?: number
+}
+
 export interface Msg {
   role: Role
   text: string
@@ -10,6 +27,8 @@ export interface Msg {
   thinking?: string
   /** Tool indicator labels (e.g. "terminal", "read_file") attached to a turn. */
   tools?: string[]
+  /** Structured tool result for a `role:'tool'` row (BUG 2). */
+  tool?: ToolMsg
   /** True while the assistant reply is still streaming in. */
   streaming?: boolean
 }

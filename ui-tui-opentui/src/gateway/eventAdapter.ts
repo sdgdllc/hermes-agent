@@ -1,4 +1,5 @@
-import type { GatewayEvent } from '../../../ui-tui/src/gatewayTypes.ts'
+import type { GatewayEvent, GatewayTranscriptMessage, SessionInflightTurn } from '../../../ui-tui/src/gatewayTypes.ts'
+import { stripToolEnvelope } from '../engine/toolOutput.ts'
 import type { Msg, PromptState } from '../model.ts'
 
 // Native event→state adapter for the REAL gateway.
@@ -98,6 +99,30 @@ export class EventAdapter {
   /** Append a locally-known message (e.g. the user's own prompt on submit). */
   pushUser(text: string): void {
     this.msgs = [...this.msgs, { role: 'user', text }]
+    this.emit()
+  }
+
+  /**
+   * Seed the transcript from a RESUMED session (BUG 3). Maps the gateway's
+   * GatewayTranscriptMessage[] into our Msg[] and appends any in-flight turn so
+   * the prior conversation shows on launch. Called once, before any user send,
+   * so it replaces (not appends to) the current message list.
+   */
+  loadTranscript(messages: GatewayTranscriptMessage[], inflight: null | SessionInflightTurn): void {
+    const mapped: Msg[] = (messages ?? []).map(m => ({ role: m.role, text: m.text ?? '' }))
+
+    if (inflight?.user) {
+      mapped.push({ role: 'user', text: inflight.user })
+    }
+
+    if (inflight?.assistant) {
+      mapped.push({ role: 'assistant', streaming: Boolean(inflight.streaming), text: inflight.assistant })
+    }
+
+    this.msgs = mapped
+    // If the resumed turn is still streaming, point liveIdx at it so subsequent
+    // message.delta events append to it instead of opening a new bubble.
+    this.liveIdx = inflight?.assistant && inflight.streaming ? this.msgs.length - 1 : -1
     this.emit()
   }
 
@@ -219,12 +244,17 @@ export class EventAdapter {
       }
 
       case 'tool.complete': {
+        // BUG 2: keep tool result as STRUCTURED fields (name/resultText/error/
+        // summary/lineCount) so the view can render compactly. `result_text`
+        // is unwrapped from its {output, exit_code} JSON envelope here so the
+        // view shows the actual output, not the wrapper.
         const name = (p.name as string) ?? 'tool'
-        const error = p.error as string | undefined
-        const resultText = (p.result_text as string) ?? (p.summary as string) ?? ''
-        const head = error ? `✗ ${name}: ${error}` : `$ ${name}`
-        const body = resultText ? `\n${resultText}` : ''
-        this.msgs = [...this.msgs, { role: 'tool', text: head + body }]
+        const error = (p.error as string) || undefined
+        const raw = (p.result_text as string) ?? (p.summary as string) ?? ''
+        const resultText = stripToolEnvelope(raw)
+        const summary = (p.summary as string) || undefined
+        const lineCount = resultText ? resultText.replace(/\s+$/, '').split('\n').length : 0
+        this.msgs = [...this.msgs, { role: 'tool', text: '', tool: { error, lineCount, name, resultText, summary } }]
         this.setStatus({ text: 'ready' })
         this.emit()
 

@@ -26,12 +26,9 @@ const cols = renderer.width
 const rows = renderer.height
 const gw = new FakeGateway()
 
+// Mount ONCE. The App reads live dimensions via useTerminalDimensions(), so a
+// resize reflows through Yoga without re-creating the root (BUG 4).
 createRoot(renderer).render(<App cols={cols} gw={gw} rows={rows} />)
-
-// Keep the app sized to the terminal.
-renderer.on('resize', (w: number, h: number) => {
-  createRoot(renderer).render(<App cols={w} gw={gw} rows={h} />)
-})
 
 // Safety net: restore the terminal on unexpected exit.
 const cleanup = () => {

@@ -30,14 +30,16 @@ const renderer = await createCliRenderer({
 
 const cols = renderer.width
 const rows = renderer.height
-const gw = new RealGateway({ cols })
+// BUG 3: the Python launcher sets HERMES_TUI_RESUME for `--resume <id>` / `-c`
+// (hermes_cli/main.py). Consume it so the OpenTUI engine resumes the prior
+// session — the Ink entry already did this; ours used to drop it.
+const resume = process.env.HERMES_TUI_RESUME?.trim() || undefined
+const gw = new RealGateway({ cols, resume })
 gw.start()
 
+// Mount ONCE. The App reads live dimensions via useTerminalDimensions(), so a
+// resize reflows through Yoga without re-creating the root (BUG 4).
 createRoot(renderer).render(<App cols={cols} gw={gw} rows={rows} />)
-
-renderer.on('resize', (w: number, h: number) => {
-  createRoot(renderer).render(<App cols={w} gw={gw} rows={h} />)
-})
 
 const cleanup = () => {
   try {

@@ -28,7 +28,20 @@ const SEED: Msg[] = [
       '- The ~10k LOC of `.tsx` is **rewritten** against `@opentui/react`.\n' +
       '- `wrap-trim` and ANSI parsing become native span emitters.'
   },
-  { role: 'tool', text: '$ bun src/entry.opentui.tsx\nrenderer 120x32 — frame ok (3.2ms)' },
+  {
+    role: 'tool',
+    text: '',
+    // 13-line result → exercises the BUG-2 compact block: capped to 10 lines
+    // with a "… +3 more (click to expand)" affordance, left-bar (no full box).
+    tool: {
+      lineCount: 13,
+      name: 'terminal',
+      resultText:
+        'src\npackage.json\ntsconfig.json\nREADME.md\nbun.lock\n' +
+        'eslint.config.mjs\n.prettierrc\nscripts\nnode_modules\n' +
+        'demo-frame.txt\ndemo-report.txt\n.gitignore\neventAdapter.ts'
+    }
+  },
   { role: 'system', text: 'engine=opentui · runtime=bun · phase=0 skeleton' }
 ]
 

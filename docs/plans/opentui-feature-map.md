@@ -16,8 +16,12 @@ Legend: ✅ done in OpenTUI · ⚠️ partial · ❌ missing · 🔴 blocking (u
 
 ## 0. Current OpenTUI engine state (what exists today)
 
-Renders: static header line, transcript scrollbox w/ role gutters, markdown→spans, tool-result
-bordered box, streaming `▍` cursor, single-line `<input>` composer, basic status text.
+Renders: static header line, transcript scrollbox w/ role gutters, markdown→spans, **compact
+tool-result render** (one-line by default; capped left-bar block w/ JSON-envelope strip +
+click-to-expand — polish 2026-06-08), streaming `▍` cursor, single-line `<input>` composer that
+**clears on submit** and never collapses (flexShrink:0), basic status text. Resize reflows live via
+`useTerminalDimensions()` (no manual re-mount). Session **resume** wired (`HERMES_TUI_RESUME` →
+`session.resume`).
 `src/gateway/eventAdapter.ts` handles: `gateway.ready`, `message.start/delta/complete`,
 `thinking/reasoning.delta` (stored on `Msg.thinking` but **not rendered**), `tool.start` (label
 only), `tool.complete`, `status.update`, `error`, `gateway.stderr/start_timeout/protocol_error`,
@@ -160,7 +164,7 @@ invoked from `createGatewayEventHandler.ts`.)
 |---|---|---|---|
 | Reasoning/thinking display | `thinking.tsx:621` (`reasoning.delta/available`) | ❌ (data captured on `Msg.thinking`, never rendered) | moderate |
 | Tool trail (live spinner+args+timing+collapse) | `thinking.tsx:689` (`tool.start/generating/progress`) | ⚠️ flat labels only | moderate |
-| Tool result (inline diffs) | inline-diff path `cgeh:698` | ⚠️ plain box | moderate |
+| Tool result (inline diffs) | inline-diff path `cgeh:698` | ⚠️ compact block (capped+strip+expand; no inline diffs yet) | moderate |
 | Subagents/delegation tree | `thinking.tsx:281` + `agentsOverlay` (`subagent.*`) | ❌ (dropped) | **hard** (biggest) |
 | Delegation HUD (SpawnHud) | `appChrome.tsx:270` (`$delegationState`) | ❌ | hard |
 | Todos panel | `todoPanel.tsx` (`payload.todos`) | ❌ | moderate |

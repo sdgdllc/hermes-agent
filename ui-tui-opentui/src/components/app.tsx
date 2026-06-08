@@ -1,4 +1,4 @@
-import { useKeyboard, useRenderer } from '@opentui/react'
+import { useKeyboard, useRenderer, useTerminalDimensions } from '@opentui/react'
 // Native OpenTUI app shell — header + transcript + (prompt overlay) + composer.
 // Phase 2: works with BOTH FakeGateway and the real request()-based gateway via
 // a generic interface. Phase 4: renders the blocking interactive prompt overlay
@@ -23,9 +23,16 @@ export interface Gateway extends PromptGateway {
   getStatus?(): { ready: boolean; text: string }
 }
 
-export function App({ gw, cols = 80, rows = 24 }: { gw: Gateway; cols?: number; rows?: number }) {
+export function App({ gw, cols: colsProp = 80, rows: rowsProp = 24 }: { gw: Gateway; cols?: number; rows?: number }) {
   const t = defaultTheme
   const renderer = useRenderer()
+  // BUG 4: read LIVE terminal dimensions so a resize reflows the whole tree
+  // (transcript width, messageLine bodyWidth, composer rule, tool char-cap) via
+  // Yoga — instead of freezing at the cols/rows passed once at mount. Falls back
+  // to the props (the headless test renderer passes explicit dimensions).
+  const dims = useTerminalDimensions()
+  const cols = dims.width || colsProp
+  const rows = dims.height || rowsProp
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [busy, setBusy] = useState(false)
   const [prompt, setPrompt] = useState<PromptState | null>(null)

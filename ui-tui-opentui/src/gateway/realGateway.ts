@@ -14,6 +14,7 @@
 // A session is created first via session.create (useSessionLifecycle.ts:170 —
 //   rpc<SessionCreateResponse>('session.create', { cols })).
 import { GatewayClient } from '../../../ui-tui/src/gatewayClient.ts'
+import type { SessionResumeResponse } from '../../../ui-tui/src/gatewayTypes.ts'
 import type { PromptState } from '../model.ts'
 
 import { EventAdapter, type Listener, type PromptListener } from './eventAdapter.ts'
@@ -39,9 +40,11 @@ export class RealGateway {
   private sid: string | null = null
   private sessionPromise: Promise<string> | null = null
   private cols: number
+  private resume: null | string
 
-  constructor(opts: { cols?: number } = {}) {
+  constructor(opts: { cols?: number; resume?: string } = {}) {
     this.cols = opts.cols ?? 80
+    this.resume = opts.resume?.trim() || null
     this.client = new GatewayClient()
     this.adapter = new EventAdapter(this.client)
   }
@@ -51,6 +54,12 @@ export class RealGateway {
     this.client.start()
     this.adapter.attach()
     this.client.drain()
+
+    // BUG 3: when resuming, kick the session off NOW so the prior conversation
+    // loads on launch (session.resume seeds the transcript), not on first send.
+    if (this.resume) {
+      void this.ensureSession()
+    }
   }
 
   /** The app subscribes here, exactly as it does for FakeGateway. */
@@ -112,11 +121,23 @@ export class RealGateway {
       return this.sessionPromise
     }
 
-    this.sessionPromise = this.client.request<SessionCreateResponse>('session.create', { cols: this.cols }).then(r => {
-      this.sid = r.session_id
+    // BUG 3: resume the prior session if an id was passed (session.resume
+    // returns the prior messages + any in-flight turn, which we load into the
+    // transcript); otherwise create a fresh one.
+    this.sessionPromise = this.resume
+      ? this.client
+          .request<SessionResumeResponse>('session.resume', { cols: this.cols, session_id: this.resume })
+          .then(r => {
+            this.sid = r.session_id
+            this.adapter.loadTranscript(r.messages ?? [], r.inflight ?? null)
 
-      return r.session_id
-    })
+            return r.session_id
+          })
+      : this.client.request<SessionCreateResponse>('session.create', { cols: this.cols }).then(r => {
+          this.sid = r.session_id
+
+          return r.session_id
+        })
 
     return this.sessionPromise
   }
