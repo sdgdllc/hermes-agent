@@ -559,6 +559,11 @@ two gates run every phase.
   interleave inline (§7); `view/toolPart.tsx` does the inline/capped-block render; `logic/toolOutput.ts`
   strips the `{output,exit_code}` envelope + collapses. Live drive shows a `⚡ terminal` row between
   text blocks (smoke P2b); 23 tests green.
-- **Next — Phase 2b-ii — native markdown:** render text parts via the native `<markdown>` renderable
-  + a theme-derived `SyntaxStyle.fromStyles` (streaming, `internalBlockMode="top-level"`), replacing
-  the raw `**`/fenced text. Completes smoke step 3 (markdown).
+- **Phase 2b-ii — native markdown: ✅** (this commit). Text parts render via `<code
+  filetype="markdown" streaming conceal>` (`CodeRenderable`, opencode's v2 path — `<markdown>` +
+  `internalBlockMode="top-level"` deferred paint headlessly) + a theme-derived `SyntaxStyle.fromStyles`
+  (`view/markdown.tsx`). Live: a markdown reply renders with `**` concealed (smoke P2b). **Phase 2 is
+  complete** — smoke steps 1–4 run live.
+- **Next — Phase 3 — blocking prompts** 🔴 (deadlock-critical): clarify / approval / sudo / secret /
+  confirm overlays + the `*.respond` RPCs + Esc/Ctrl+C cancel paths (gate the global Ctrl+C-quit on
+  `!blocked`). Makes real interactive sessions usable. Then Phase 4 (slash system + session lifecycle).

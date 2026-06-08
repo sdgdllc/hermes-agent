@@ -182,10 +182,30 @@ envelope stripped (`logic/toolOutput.ts`). Adds smoke step 4 (tool row renders i
     (Raw `**2 lines**`/``` fences are expected — native `<markdown>` is 2b-ii.)
   - **Teardown:** Ctrl+C → my `bun` + its `tui_gateway` child both gone, no orphan.
 
-**Phase 2b-ii — native markdown (TODO):** render text parts via the native `<markdown>`
-(`MarkdownRenderable`) + a `SyntaxStyle.fromStyles` built from the theme (streaming +
-`internalBlockMode="top-level"`), so bold/headings/fences/tables render instead of raw `**`/```` ```.
-Completes smoke step 3 (markdown).
+**Phase 2b-ii — native markdown:** text parts render via the native `<code filetype="markdown"
+streaming>` (`CodeRenderable` — opencode's v2 text path; `<markdown>` + `internalBlockMode="top-level"`
+deferred paint headlessly) with a theme-derived `SyntaxStyle.fromStyles` (cached per theme), `conceal`
+(hide `**`/backtick markers), and `drawUnstyledText` (paint raw text immediately while highlighting
+settles — also makes it headless-capturable). Completes smoke step 3 (markdown).
+
+- *Run log (2026-06-08, PASS):*
+  - Headless gate `bun run check` → **green** (23 tests / 5 files). Render helper now `flush()`es
+    (Tree-sitter markdown tokenizes async) and `captureFrame` can wait for content via `until`
+    (`waitForFrame`); the hello + inline-tool frame tests pass with text rendered through the
+    markdown renderable.
+  - **Live tmux:** prompt asking for a level-2 heading + a bold word + a 2-item bullet list rendered:
+    ```
+     ⚕ (´･_･`) contemplating...
+       Demo
+       This word is bold
+       - apples
+       - oranges
+    ```
+    The `**bold**` markers are CONCEALED — `grep -c '**'` over the pane = **0** (no raw markup leak).
+  - **Teardown:** Ctrl+C → my `bun` + child both reaped, no orphan.
+
+**Phase 2 is complete** (2a shell + 2b-i ordered parts/tool render + 2b-ii markdown). Smoke steps
+1–4 run live; step 5+ (modals/overlays), step 6 (blocking prompts), step 7 (resume) are later phases.
 
 ### Phase 3 — blocking prompts
 _(append: step 6 — all 4 prompts + confirm + cancel paths; verify no deadlock)_

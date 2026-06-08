@@ -67,9 +67,15 @@ A row is ✅ only when it has a test (Layer 1–4) AND a smoke-doc check. The ju
 | `{output,exit_code}` envelope strip + line/char collapse | — | `util/collapse-tool-output.ts` | `logic/toolOutput.ts` | ✅ | `toolOutput.test.ts` + `render.test.tsx` (`not.toContain exit_code`) |
 | Reasoning part accumulation (render is dim text; rich trail = Phase 5d) | `thinking.tsx:621` | — | `logic/store.ts`, `view/messageLine.tsx` | ⚠️ basic | `store.test.ts` |
 
-_Phase 2b-ii (native `<markdown>` for text parts via `SyntaxStyle.fromStyles`) and later phases
-(prompts, overlays/pickers, chrome, agent features) are added as each lands — the §1–§4 Ink
-inventory below is the per-phase source._
+### Phase 2b-ii — native markdown
+| Concern | Ink ref | opencode ref | v2 build | Status | Test · smoke |
+|---|---|---|---|---|---|
+| Assistant text via native `<code filetype="markdown" streaming conceal>` + theme-derived `SyntaxStyle.fromStyles` (cached per theme); `drawUnstyledText` | `markdown.tsx` | `session-v2.tsx:358` AssistantText | `view/markdown.tsx`, `view/messageLine.tsx` | ✅ | `render.test.tsx` · smoke P2b (no raw `**`) |
+| Frame helper settles async markdown (`flush` + `waitForFrame`/`until`) | — | `test/cli/tui/*` | `test/lib/render.ts` | ✅ | (all frame tests) |
+
+**Phase 2 complete** — smoke steps 1–4 run live (launch → type/submit → streamed markdown reply →
+inline tool render). _Later phases (blocking prompts, slash/session, overlays/pickers, chrome, agent
+features) are added as each lands — the §1–§4 Ink inventory below is the per-phase source._
 
 ---
 
