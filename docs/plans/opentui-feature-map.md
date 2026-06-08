@@ -50,9 +50,18 @@ A row is ✅ only when it has a test (Layer 1–4) AND a smoke-doc check. The ju
 | Typed errors at the boundary (`RendererError`/`GatewayError`/`PythonResolutionError`) | — | — | `boundary/errors.ts` | ✅ | (compile + `gateway.test.ts`) |
 | Diagnostics log (ring + NDJSON file; console-safe) | — | `util/log.ts` | `boundary/log.ts` | ✅ | (live smoke tail) |
 
-_Phase 2+ rows (transcript scrollbox, ordered parts/tool render, markdown, composer, header/chrome,
-prompts, overlays/pickers, agent features) are added as each phase lands — the §1–§4 Ink inventory
-below is the per-phase source._
+### Phase 2a — interactive shell (scrollbox + composer + header)
+| Concern | Ink ref | opencode ref | v2 build | Status | Test · smoke |
+|---|---|---|---|---|---|
+| Transcript `<scrollbox>` — one full-height, sticky-bottom, §8 #2 gotchas (minHeight:0 wrapper+box, no flexDirection on root) | `appLayout.tsx` | `routes/session/index.tsx:1169` | `view/transcript.tsx` | ✅ | `render.test.tsx` · smoke P2a |
+| MessageLine — role gutter + streaming `▍`, themed (flat text; ordered parts in 2b) | `transcript.*` | `session-v2.tsx:305` | `view/messageLine.tsx` | ⚠️ flat | `render.test.tsx` · smoke P2a |
+| Composer `<textarea>` — flexShrink:0, focus-on-mount, Enter→submit, `.clear()` + re-entrancy guard → `prompt.submit` | `textInput.tsx`, `useSubmission.ts` | `component/prompt/index.tsx:141` | `view/composer.tsx` + `entry/main.tsx` submit | ✅ | smoke P2a (typed→cleared→reply) |
+| Header skeleton (brand · engine · ready) | `appChrome.tsx`/`branding.tsx` | — | `view/header.tsx` | ⚠️ skeleton | `render.test.tsx` · smoke P2a |
+| Frame-snapshot helper settles a scrollbox (3× renderOnce) | — | `test/cli/tui/*.test.tsx` | `test/lib/render.ts` | ✅ | (all frame tests) |
+
+_Phase 2b (ordered `parts[]` §7 + `<Switch>` dispatch, inline/block tool render with envelope-strip,
+native `<markdown>`) and later phases (prompts, overlays/pickers, chrome, agent features) are added
+as each lands — the §1–§4 Ink inventory below is the per-phase source._
 
 ---
 

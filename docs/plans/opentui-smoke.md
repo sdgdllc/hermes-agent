@@ -128,7 +128,38 @@ child (newly wired this phase). The composer is Phase 2, so the prompt is driven
     its gateway child is reaped by the graceful-quit finalizer.
 
 ### Phase 2 — core transcript
-_(append: markdown rendering, inline ordered-parts tool render — steps 3–4 full)_
+
+**Phase 2a — interactive shell (scrollbox + composer + header):** the read-only Phase-1 view
+becomes interactive. New: a `<scrollbox>` transcript (§8 #2 gotchas — `minHeight:0` on wrapper +
+scrollbox, NO `flexDirection` on the scrollbox root, `stickyScroll`/`stickyStart="bottom"`); a
+`<textarea>` composer (`flexShrink:0`, focus-on-mount, Enter→submit via `keyBindings`, imperative
+`.clear()` + `submitting` re-entrancy guard) that fires `prompt.submit` — now the PRIMARY input
+(the `HERMES_TUI_PROMPT` stand-in stays for launch-with-prompt); a `header.tsx` skeleton. Steps 1–3
+now run via the composer (no env prompt needed).
+
+- *Drive:* live entry in tmux (real TTY, 100x28), no initial prompt; type into the composer.
+- *Run log (2026-06-08, PASS):*
+  - Headless gate `bun run check` → **green**: `tsc` + `eslint` clean; `bun test` **12/12** (4 files,
+    31 expects). Frame test asserts header + the streamed message INSIDE the scrollbox + the composer
+    placeholder; a re-skin test still re-themes the brand. Render helper now flushes 3 `renderOnce`
+    passes — a `<scrollbox>` needs >1 pass to measure content + apply sticky before children paint
+    (one pass left the transcript row blank).
+  - **Live tmux:** header `ready`; composer placeholder showed the LIVE skin's welcome string
+    ("Welcome to Hermes Agent! …" — proves the skin→theme path end to end). Typed
+    `Reply with exactly three words` + Enter → composer cleared, and:
+    ```
+     Hermes Agent · opentui · ready
+     ❯ Reply with exactly three words
+     ⚕ Here are three words
+     Welcome to Hermes Agent! Type your message or /help for commands.
+    ```
+  - **Teardown:** Ctrl+C quits cleanly EVEN with the textarea focused (renderer.keyInput sees Ctrl+C);
+    my `bun` PID gone + its `tui_gateway` child reaped — no orphan (exact-PID checks).
+
+**Phase 2b — ordered parts + tool render + markdown (TODO):** replace the flat `Message.text` with
+an ordered `parts[]` (§7) and a `<Switch>` dispatch in `messageLine.tsx`; inline/block tool render
+(compact one-line / capped left-bar block, strip the `{output,exit_code}` envelope); native
+`<markdown>` for assistant text. Adds smoke step 4 (tool row renders inline) + step 3 markdown.
 
 ### Phase 3 — blocking prompts
 _(append: step 6 — all 4 prompts + confirm + cancel paths; verify no deadlock)_

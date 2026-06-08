@@ -550,6 +550,12 @@ two gates run every phase.
   its own gateway child — the full keymap host + `!blocked` gating still land with prompts (Phase 3);
   (b) an **initial-prompt bootstrap** (`HERMES_TUI_PROMPT` → `session.create`→`prompt.submit`) as the
   Phase-2-composer stand-in so a streamed reply can be driven live now.
-- **Next — Phase 2 — core transcript:** `<scrollbox>` (§8 gotchas), ordered-parts `messageLine`
-  (§7), markdown→native `<markdown>`, the real composer (clear-on-submit, replacing the
-  initial-prompt stand-in), header skeleton. Frame-snapshot tests + smoke steps 3–4.
+- **Phase 2a — interactive shell: ✅** (this commit). The `<scrollbox>` transcript (§8 #2 gotchas),
+  the real `<textarea>` composer (clear-on-submit + re-entrancy guard → `prompt.submit`, now the
+  primary input), and a `header.tsx` skeleton. Live drive + gate logged in `opentui-smoke.md` (P2a);
+  parity-matrix rows ✅/⚠️ in `opentui-feature-map.md`.
+- **Next — Phase 2b — ordered parts + tool render + markdown:** replace the flat `Message.text` with
+  an ordered `parts[]` (§7) + a `<Switch>` dispatch in `messageLine.tsx`; inline/block compact tool
+  render (one-line / capped left-bar block, strip the `{output,exit_code}` envelope); native
+  `<markdown>` for assistant text. Frame-snapshot tests + smoke step 4 (inline tool row) + step 3
+  markdown.
