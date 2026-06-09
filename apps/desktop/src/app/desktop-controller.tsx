@@ -14,7 +14,6 @@ import { useSkinCommand } from '@/themes/use-skin-command'
 import { formatRefValue } from '../components/assistant-ui/directive-text'
 import { getCronJobs, getSessionMessages, listAllProfileSessions, type SessionInfo, triggerCronJob } from '../hermes'
 import { preserveLocalAssistantErrors, toChatMessages } from '../lib/chat-messages'
-import { MESSAGING_SESSION_SOURCE_IDS } from '../lib/session-source'
 import { setCronFocusJobId, setCronJobs } from '../store/cron'
 import {
   $panesFlipped,
@@ -122,7 +121,11 @@ const SkillsView = lazy(async () => ({ default: (await import('./skills')).Skill
 // this cadence while the app is open + visible so new runs surface promptly
 // instead of waiting for the next user-triggered refreshSessions().
 const CRON_POLL_INTERVAL_MS = 30_000
-const SIDEBAR_EXCLUDED_SOURCES = ['cron', ...MESSAGING_SESSION_SOURCE_IDS]
+// Only cron rows are kept out of the recents page (they're surfaced in the
+// dedicated Cron section). Messaging-platform sessions (telegram, discord, …)
+// DO belong in the sidebar — they render with their platform folder/icon via
+// the messaging-source work on main.
+const SIDEBAR_EXCLUDED_SOURCES = ['cron']
 
 // Cheap signature compare so the poll only swaps the atom (and re-renders the
 // sidebar) when the visible cron rows actually changed.
@@ -309,9 +312,9 @@ export function DesktopController() {
       // clutter the sidebar.
       // Unified cross-profile list (served read-only off each profile's
       // state.db; no per-profile backend is spawned). Single-profile users get
-      // the same rows tagged profile="default". Cron + messaging-platform
-      // sessions are excluded here; cron rows are fetched separately
-      // (refreshCronSessions) for the dedicated Cron section.
+      // the same rows tagged profile="default". Cron sessions are excluded here
+      // and fetched separately (refreshCronSessions) so the scheduler's
+      // always-newest rows can't consume the recents page budget.
       // Scope the fetch to the active profile (not always 'all') so a profile
       // with few recent sessions isn't windowed out of the cross-profile
       // recency page — the empty-history-on-profile-switch bug.
